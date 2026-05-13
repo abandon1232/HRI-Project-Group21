@@ -13,6 +13,8 @@ import time
 import json
 import datetime
 import os
+import threading
+import random
 
 try:
     from furhat_realtime_api import FurhatClient
@@ -49,13 +51,20 @@ OPENING = "Hello, and welcome to your weekly check-in for Uppsala University stu
 QUESTIONS = [
     "How would you describe your general mood this past week here in Uppsala?",
     "Have you experienced any stress from your university studies or recent deadlines?",
-    "With the dark winter days, how have you been relaxing or taking care of yourself recently?",
-    "How would you describe your energy and rest this week?",
+    "How do you feel you have balanced your study time and your personal life over the past few days?",
     "How has your social life or connection with friends been lately? Have you had time for a fika or a chat?",
+    "With the dark winter days, how have you been relaxing or taking care of yourself?",
+    "How would you describe your energy and rest this week?",
     "Finally, how would you rate your sleep quality over the past few nights?",
 ]
 
-CLOSING = "Thank you. The check-in is now complete. Have a good week."
+TRANSITIONS = [
+    "Now, moving on to the next part.",
+    "Let's move to the next question.",
+    "Moving forward."
+]
+
+CLOSING = "Thank you so much for taking the time to complete this check-in. Your participation is highly appreciated. Remember that taking care of your mental well-being is just as important as your studies. I hope you have a wonderful and balanced week ahead. Goodbye!"
 
 # ============================================================
 # NON-VERBAL CUES (only applied in empathetic condition)
@@ -126,9 +135,28 @@ class FurhatWrapper:
         if self.client:
             self.client.request_gesture_start(name=name)
 
-    def listen(self):
+    def listen(self, condition="neutral"):
         if self.client:
-            text = self.client.request_listen_start() or ""
+            listening = [True]
+            def backchannel():
+                while listening[0]:
+                    time.sleep(random.uniform(1.5, 3.0))
+                    if listening[0] and condition == "empathetic":
+                        try:
+                            self.client.request_gesture_start(name="Smile")
+                        except Exception:
+                            pass
+            
+            if condition == "empathetic":
+                t = threading.Thread(target=backchannel)
+                t.start()
+                
+            try:
+                text = self.client.request_listen_start() or ""
+            finally:
+                listening[0] = False
+                if condition == "empathetic":
+                    t.join(timeout=1.0)
         else:
             text = input("You: ")
         print(f"[User]: {text}")
@@ -167,6 +195,26 @@ def analyze_sentiment(user_text):
             return "positive"
     return "neutral"
 
+POSITIVE_FEEDBACK_TEXTS = [
+    "I am genuinely glad to hear that you are doing well. It is always encouraging to see positive moments during the week.",
+    "That is wonderful to hear. Having those good experiences really makes a difference in your overall well-being.",
+    "It is great to know things are going well for you. Keep focusing on whatever is bringing you that positive energy."
+]
+NEGATIVE_FEEDBACK_TEXTS = [
+    "I completely understand. That sounds like a very challenging situation to navigate, and it is entirely normal to feel that way.",
+    "I am truly sorry to hear you are feeling that way. Please remember to be kind to yourself during these difficult moments.",
+    "That sounds really tough. It is completely valid to feel overwhelmed, so make sure you are taking some time just to breathe."
+]
+NEUTRAL_FEEDBACK_TEXTS = [
+    "I see. Thank you for sharing that with me. It is always helpful to take a moment and reflect on where you stand.",
+    "Got it. Thanks for telling me. Sometimes things just are the way they are, and that is perfectly alright.",
+    "Okay, thank you for letting me know. I appreciate your honesty in taking the time to check in today."
+]
+
+POSITIVE_GESTURES = ["Smile", "BigSmile"]
+NEGATIVE_GESTURES = ["BrowFrown", "ExpressSad"]
+NEUTRAL_GESTURES = ["Nod"]
+
 class CheckinStateMachine:
     def __init__(self, condition):
         self.condition = condition
@@ -174,6 +222,11 @@ class CheckinStateMachine:
         self.furhat.configure_for_condition(condition)
         self.state = "GREETING"
         self.question_index = 0
+        self.sentiment_counts = {
+            "positive": 0,
+            "negative": 0,
+            "neutral": 0
+        }
         self.session_log = {
             "condition": condition,
             "timestamp": datetime.datetime.now().isoformat(),
@@ -209,33 +262,56 @@ class CheckinStateMachine:
                     if self.question_index < len(QUESTIONS):
                         question = QUESTIONS[self.question_index]
                         
-                        # Increased nodding frequency: show engagement before asking
-                        if self.condition == "empathetic":
-                            self.furhat.gesture("Nod", self.condition)
-                            time.sleep(0.5)
+                        # Filler transition phrase (Deterministic to ensure strict experimental control)
+                        if self.question_index in [2, 4, 6]:
+                            time.sleep(1.0)
+                            # Pick transition sequentially based on question index
+                            transition_idx = [2, 4, 6].index(self.question_index)
+                            transition = TRANSITIONS[transition_idx % len(TRANSITIONS)]
+                            self.furhat.say(transition, self.condition)
+                            self.log_interaction("Furhat", transition)
                             
                         # Just ask the question
                         self.furhat.say(question, self.condition)
                         self.log_interaction("Furhat", question)
                         
-                        user_text = self.furhat.listen()
+                        user_text = self.furhat.listen(self.condition)
                         self.log_interaction("User", user_text)
                         
                         if check_safety(user_text):
                             self.state = "EMERGENCY"
                             continue
+                            
+                        # Elaboration probe
+                        if len(user_text.split()) < 3 and not check_safety(user_text):
+                            probe = "I see. Could you tell me a little bit more about that?"
+                            self.furhat.say(probe, self.condition)
+                            self.log_interaction("Furhat", probe)
+                            
+                            user_text_2 = self.furhat.listen(self.condition)
+                            self.log_interaction("User", user_text_2)
+                            
+                            user_text = user_text + " " + user_text_2
+                            
+                            if check_safety(user_text):
+                                self.state = "EMERGENCY"
+                                continue
                         
                         if user_text:
                             sentiment = analyze_sentiment(user_text)
+                            idx = self.sentiment_counts[sentiment]
+                            
                             if sentiment == "positive":
-                                feedback_speech = "I am glad to hear that."
-                                feedback_gesture = "Smile"
+                                feedback_speech = POSITIVE_FEEDBACK_TEXTS[idx % len(POSITIVE_FEEDBACK_TEXTS)]
+                                feedback_gesture = POSITIVE_GESTURES[idx % len(POSITIVE_GESTURES)]
                             elif sentiment == "negative":
-                                feedback_speech = "I understand. That sounds challenging."
-                                feedback_gesture = "BrowFrown"
+                                feedback_speech = NEGATIVE_FEEDBACK_TEXTS[idx % len(NEGATIVE_FEEDBACK_TEXTS)]
+                                feedback_gesture = NEGATIVE_GESTURES[idx % len(NEGATIVE_GESTURES)]
                             else:
-                                feedback_speech = "I see. Thank you for sharing."
-                                feedback_gesture = "Nod"
+                                feedback_speech = NEUTRAL_FEEDBACK_TEXTS[idx % len(NEUTRAL_FEEDBACK_TEXTS)]
+                                feedback_gesture = NEUTRAL_GESTURES[idx % len(NEUTRAL_GESTURES)]
+                                
+                            self.sentiment_counts[sentiment] += 1
                                 
                             # Do the gesture FIRST (only if empathetic)
                             if self.condition == "empathetic":

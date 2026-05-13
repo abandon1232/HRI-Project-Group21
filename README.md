@@ -30,3 +30,21 @@ python HRI/condition2_neutral.py
 ```
 
 Interaction transcripts and system events are automatically saved in the `logs/` directory.
+
+
+
+The script：
+Q1: How would you describe your general mood this past week here in Uppsala?
+"My mood has been okay, thank you. The weather in Uppsala is a bit grey, but I'm trying to enjoy the small moments of sunshine."
+Q2: Have you experienced any stress from your university studies or recent deadlines?
+"Yes, I've been feeling quite stressed actually. I have a major deadline and a group project due at the end of this week.
+Q3: How do you feel you have balanced your study time and your personal life over the past few days?
+"It has been hard to balance everything. I spend most of my time in the library and don't have much time for myself."
+Q4: How has your social life or connection with friends been lately? Have you had time for a fika or a chat?
+"My social life has been great. I had a really nice fika with my classmates yesterday, which was a very pleasant break."
+Q5: With the dark winter days, how have you been relaxing or taking care of yourself?
+"I've been relaxing by staying at home, lighting some candles, and reading books to cope with the darkness outside."
+Q6: How would you describe your energy and rest this week?
+"To be honest, I feel very tired and a bit exhausted after such a long and busy week at the university."
+Q7: Finally, how would you rate your sleep quality over the past few nights?
+"My sleep has been fine. I usually manage to get about seven hours of sleep, so I feel relatively well-rested."
