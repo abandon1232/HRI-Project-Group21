@@ -235,7 +235,11 @@ class CheckinStateMachine:
 
     def log_interaction(self, speaker, text, gesture=None):
         entry = {"speaker": speaker, "text": text}
-        if gesture:
+        # Only record gestures in the empathetic condition; the neutral
+        # condition does not perform expressive gestures, so the log should
+        # not list them either (keeps the session JSON faithful to what the
+        # robot actually does).
+        if gesture and self.condition == "empathetic":
             entry["gesture"] = gesture
         self.session_log["interactions"].append(entry)
 

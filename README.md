@@ -9,7 +9,7 @@ This project aims to design and evaluate a Social Robot intervention to support 
 ## Experimental Design
 To test whether emotional expressiveness significantly enhances perceived empathy, we implemented two distinct interaction conditions. To prevent the confounding "Uncanny Valley" effect caused by modal mismatch, both conditions share an **identical, objectively phrased, and non-directive verbal script**. The independent variable is strictly isolated to the non-verbal channel.
 
-- **Condition 1 (Empathetic):** High expressivity utilizing dynamic Face Textures, increased nodding frequency (e.g., nodding before asking questions), context-aware empathetic gestures (e.g., smiling for positive responses, frowning for negative), and an expressive neural voice model (Amazon Polly Joanna-Neural) to deliver in-situ physiological regulation and supportive feedback.
+- **Condition 1 (Empathetic):** High expressivity utilizing dynamic Face Textures, context-aware empathetic gestures (e.g., smiling for positive responses, frowning for negative), and an expressive neural voice model (Amazon Polly Joanna-Neural) to deliver in-situ physiological regulation and supportive feedback.
 - **Condition 2 (Neutral):** A baseline version employing Furhat's default idle behavior, static facial expressions, a standard monotonic voice (Salli), and an absence of non-verbal supportive gestures, ensuring no empathetic valence is projected.
 
 ## Core Features
