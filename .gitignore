@@ -1,0 +1,35 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ---------- Virtual environments ----------
+.venv/
+venv/
+env/
+ENV/
+
+# ---------- IDE / editor ----------
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- OS clutter ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Project-local runtime artefacts ----------
+# Session logs are generated at runtime; keep curated demo logs in version
+# control manually (commit them individually if you want to share an example).
+logs/*.json
+
+# Word's lock / autosave files
+~$*.docx
+*.tmp
+
+# ---------- Jupyter / data exploration ----------
+.ipynb_checkpoints/
